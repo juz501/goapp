@@ -1,7 +1,7 @@
 {
   "name": "goapp",
   "version": "1.0.0",
-  "description": "",
+  "description": "This project assumes you have node, npm, sass and go installed",
   "main": "server.go",
   "scripts": {
     "install": "npm run install-negroni && npm run install-render",
