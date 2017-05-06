@@ -1,7 +1,8 @@
 .sass-cache
 *.swp
 *.exe
-public/
+public/*
+!public/.gitkeep
 pkg/
 src/
 node_modules/
