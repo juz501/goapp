@@ -1,0 +1,17 @@
+{
+  "name": "goapp",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.go",
+  "scripts": {
+    "install": "npm run install-negroni && npm run install-render",
+    "install-negroni": "sh -c 'GOPATH=$(PWD) go get github.com/urfave/negroni'",
+    "install-render": "sh -c 'GOPATH=$(PWD) go get github.com/unrolled/render'",
+    "start": "sh -c 'GOPATH=$(PWD) go run server.go'",
+    "js": "cp assets/js/*.js public",
+    "files": "cp assets/favicon.ico public && cp assets/robots.txt public",
+    "sass": "sass --watch assets/scss:public"
+  },
+  "author": "Julian Chan",
+  "license": "MIT"
+}

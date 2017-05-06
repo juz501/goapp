@@ -1,0 +1,6 @@
+.sass-cache
+*.swp
+*.exe
+public/
+pkg/
+src/
