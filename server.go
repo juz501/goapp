@@ -24,5 +24,5 @@ func main() {
   s := negroni.NewStatic(http.Dir("public"))
   n.Use(s)
   n.UseHandler(mux)
-  http.ListenAndServe(":3000", n)
+  http.ListenAndServe(":80", n)
 }
