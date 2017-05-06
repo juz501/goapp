@@ -1,7 +1,7 @@
 {
   "name": "goapp",
   "version": "1.0.0",
-  "description": "This project assumes you have node, npm, sass and go installed",
+  "description": "This project assumes you have go and npm installed",
   "main": "server.go",
   "scripts": {
     "install": "npm run install-negroni && npm run install-render",
@@ -10,8 +10,11 @@
     "start": "sh -c 'GOPATH=$(PWD) go run server.go'",
     "js": "cp assets/js/*.js public",
     "files": "cp assets/favicon.ico public && cp assets/robots.txt public",
-    "sass": "sass --watch assets/scss:public"
+    "sass": "node-sass assets/scss --output public"
   },
   "author": "Julian Chan",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "node-sass": "^4.5.2"
+  }
 }

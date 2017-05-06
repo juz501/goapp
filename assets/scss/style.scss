@@ -1,4 +1,19 @@
+$theme-color: blue;
+
 h1 {
-  color: green;
+  color: $theme-color;
   opacity: 0.5;
+  display: inline-block;
+  &:after {
+    content: " ";
+    display: block;
+    border-bottom: 2px solid $theme-color;
+    transform: scaleX(0);
+    transform-origin: 100%;
+    transition: transform ease 1s;
+  }
+  &.trigger:after {
+    transform-origin: 0%;
+    transform: scaleX(1);
+  }
 }
