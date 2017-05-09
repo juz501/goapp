@@ -2,6 +2,7 @@ package main
 
 import (
   "net/http"
+  "os"
 
   "github.com/urfave/negroni"
   "github.com/unrolled/render"
@@ -12,7 +13,7 @@ func main() {
   mux := http.NewServeMux()
 
   mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
-    rend.HTML(w, http.StatusOK, "index", "")
+    rend.HTML(w, http.StatusOK, "index", "David")
   })
 
   n := negroni.New()
@@ -24,5 +25,10 @@ func main() {
   s := negroni.NewStatic(http.Dir("public"))
   n.Use(s)
   n.UseHandler(mux)
-  http.ListenAndServe(":80", n)
+  port := ":" + os.Getenv("PORT")
+  if port == ":" {
+    port = ":80"
+  }
+  addr := os.Getenv("SERVER_ADDR")
+  http.ListenAndServe( addr + port, n)
 }
