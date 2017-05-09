@@ -11,7 +11,7 @@
     "js": "cp assets/js/*.js public",
     "files": "cp assets/favicon.ico public && cp assets/robots.txt public && cp assets/noext public && cp -r assets/images public",
     "sass": "node-sass assets/scss --output public",
-    "all" : "npm run js && npm run sass && npm run files"
+    "prestart" : "npm run js && npm run sass && npm run files"
   },
   "author": "Julian Chan",
   "license": "MIT",
