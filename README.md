@@ -13,9 +13,7 @@
 ## Instructions
 
 * npm install
-* npm run sass
-* npm run js
-* npm run files
+* npm run all
 * npm start
 
 ## TODO
