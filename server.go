@@ -2,7 +2,6 @@ package main
 
 import (
   "encoding/json"
-  "fmt"
   "io/ioutil"
   "log"
   "net/http"
@@ -39,30 +38,17 @@ func main() {
 
 func handleRender(mux *http.ServeMux, rend *render.Render) {
   mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
-    defer func() {
-      if r := recover(); r != nil {
-        log.Println("recovered")
-        fmt.Fprintln(w, "Template Not Available")
-      }
-    }()
-    var data interface{}
-    templateName := strings.TrimPrefix(req.URL.Path, "/")
+    templateName := strings.TrimSuffix(strings.TrimPrefix(req.URL.Path, "/"), "/")
     path := "/goapp/"
     if templateName == "" {
       templateName = "index"
-    } else {
-      templateName = strings.TrimSuffix(templateName, "/")
     }
     data, err := loadData(templateName + ".json", path)
     if err != nil {
-      log.Println(err)
       rend.HTML(w, http.StatusServiceUnavailable, "default/dataUnavailable", "")
-      return
-    }
-    templateExists := Exists(templateName)
-    if templateExists == false {
+    } else if false == Exists(templateName) {
       rend.HTML(w, http.StatusServiceUnavailable, "default/templateUnavailable", "")
-    } else {
+    } else { 
       rend.HTML(w, http.StatusOK, templateName, data)
     }
   })
