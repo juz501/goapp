@@ -1,8 +1,8 @@
-$theme-color: blue;
+$theme-color: white;
 
 h1 {
   color: $theme-color;
-  opacity: 0.5;
+  opacity: 0.9;
   display: inline-block;
   &:after {
     content: " ";
@@ -16,4 +16,10 @@ h1 {
     transform-origin: 0%;
     transform: scaleX(1);
   }
+}
+
+body {
+  background: url('images/pikachu.jpg') 50% 100% no-repeat;
+  background-attachment: fixed;
+  height: 100%;
 }

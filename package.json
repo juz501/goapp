@@ -9,8 +9,9 @@
     "install-render": "sh -c 'GOPATH=`pwd -P` go get github.com/unrolled/render'",
     "start": "sh -c 'GOPATH=`pwd -P` PORT=8080 go run server.go'",
     "js": "cp assets/js/*.js public",
-    "files": "cp assets/favicon.ico public && cp assets/robots.txt public",
-    "sass": "node-sass assets/scss --output public"
+    "files": "cp assets/favicon.ico public && cp assets/robots.txt public && cp -r assets/images public",
+    "sass": "node-sass assets/scss --output public",
+    "all" : "npm run js && npm run sass && npm run files"
   },
   "author": "Julian Chan",
   "license": "MIT",

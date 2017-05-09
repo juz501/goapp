@@ -1,4 +1,5 @@
 .sass-cache
+npm-debug.log
 *.swp
 *.exe
 public/*
