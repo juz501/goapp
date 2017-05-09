@@ -30,3 +30,4 @@
 * Add Routing
 * Add Database
 * Add Authentication
+* Add Linting

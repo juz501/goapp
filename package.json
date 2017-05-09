@@ -7,9 +7,9 @@
     "install": "npm run install-negroni && npm run install-render",
     "install-negroni": "sh -c 'GOPATH=`pwd -P` go get github.com/urfave/negroni'",
     "install-render": "sh -c 'GOPATH=`pwd -P` go get github.com/unrolled/render'",
-    "start": "sh -c 'GOPATH=`pwd -P` PORT=8080 go run server.go'",
+    "start": "sh -c 'GOPATH=`pwd -P` PORT=8080 go build -o server server.go' && sh -c 'GOPATH=`pwd =P` PORT=8080 ./server'",
     "js": "cp assets/js/*.js public",
-    "files": "cp assets/favicon.ico public && cp assets/robots.txt public && cp -r assets/images public",
+    "files": "cp assets/favicon.ico public && cp assets/robots.txt public && cp assets/noext public && cp -r assets/images public",
     "sass": "node-sass assets/scss --output public",
     "all" : "npm run js && npm run sass && npm run files"
   },

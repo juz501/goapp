@@ -1,5 +1,5 @@
 .sass-cache
-npm-debug.log
+npm-debug.log*
 *.swp
 *.exe
 public/*
@@ -7,3 +7,4 @@ public/*
 pkg/
 src/
 node_modules/
+/server
