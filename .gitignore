@@ -7,4 +7,5 @@ public/*
 pkg/
 src/
 node_modules/
-/server
+bin/*
+!bin/.gitkeep

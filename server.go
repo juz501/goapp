@@ -53,7 +53,7 @@ func main() {
 
 func handleRender(mux *http.ServeMux, rend *render.Render, logger juz501.ALogger) {
   mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
-    _, _, _, baseURI, templateName, err := getBasePathAndTemplate(req, logger)
+    baseURI, templateName, err := getBaseURIAndTemplate(req, logger)
     if err != nil {
       return
     }
@@ -69,16 +69,19 @@ func handleRender(mux *http.ServeMux, rend *render.Render, logger juz501.ALogger
   })
 }
 
-func getBasePathAndTemplate(req *http.Request, logger juz501.ALogger) (string, string, string, string, string, error) {
-  proto, host, path := getRequestVars(req, logger)
+func getBaseURIAndTemplate(req *http.Request, logger juz501.ALogger) (string, string, error) {
+  proto, host, _ := getRequestVars(req, logger)
   baseURI := proto + "://" + host + "/" 
   templateName, err := getTemplate(req, baseURI, logger)
-  return proto, host, path, baseURI, templateName, err
+  return baseURI, templateName, err
 }
 
 func getRequestVars(req *http.Request, logger juz501.ALogger) (string, string, string) {
-  forwardedProto := req.Header.Get( "X-Forwarded-Proto" )
   proto := req.URL.Scheme
+  if proto == "" {
+    proto = "http"
+  } 
+  forwardedProto := req.Header.Get( "X-Forwarded-Proto" )
   if forwardedProto != "" {
     proto = forwardedProto
   }
