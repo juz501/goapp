@@ -2,7 +2,7 @@
   "name": "goapp",
   "version": "1.0.0",
   "description": "This project assumes you have go and npm installed",
-  "main": "server.go",
+  "main": "goapp.go",
   "scripts": {
     "js": "cp theme/assets/js/*.js public",
     "files": "cp theme/assets/favicon.ico public && cp theme/assets/robots.txt public && cp theme/assets/noext public && cp -r theme/assets/images public",
