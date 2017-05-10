@@ -16,7 +16,7 @@ uninstall:
 	rm -rf src/github.com
 
 run: build
-	GOBASEROUTE=goapp $(PWD)/bin/goapp
+	$(PWD)/bin/goapp
 
 # the following are used for setting up a daemon via systemd
 # systemd service script not included
