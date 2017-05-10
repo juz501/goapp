@@ -13,6 +13,7 @@
 ## Instructions
 
 * npm install
+* npm run install
 * npm start
 
 ## TODO

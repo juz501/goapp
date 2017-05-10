@@ -10,7 +10,8 @@ import (
 
   "github.com/urfave/negroni"
   "github.com/unrolled/render"
-  "github.com/juz501/go-logger-middleware"
+  "github.com/juz501/go_logger_middleware"
+  "github.com/juz501/go_static_middleware"
 )
 
 func main() {
@@ -27,24 +28,19 @@ func main() {
   rend := render.New(render.Options{IsDevelopment: true})
   mux := http.NewServeMux()
   n := negroni.New()
-  l := juz501.NewLoggerWithStream( errorLog )
-
+  l := go_logger_middleware.NewLoggerWithStream( errorLog )
   r := negroni.NewRecovery()
   r.Logger = l
   r.PrintStack = false
-  baseRoute := os.Getenv("GO_BASE_ROUTE")
-  if baseRoute == "" {
-    baseRoute = "/"
-  }
-  
+  baseRoute := os.Getenv("GOBASEROUTE")
+
   handleRender(mux, rend, l, baseRoute)
-  s := negroni.NewStatic(http.Dir("public"))
-  s.Prefix = strings.TrimSuffix(baseRoute, "/")
+  s := go_static_middleware.NewStatic(http.Dir("public"))
+  s.Prefix = "/" + baseRoute
 
   n.Use(r)
   n.Use(l)
   n.UseHandler(mux)
-  s := negroni.NewStatic(http.Dir("public"))
 
   n.Use(s)
 
@@ -59,114 +55,102 @@ func main() {
   http.ListenAndServe( addr + port, n )
 }
 
-func handleRender(mux *http.ServeMux, rend *render.Render, logger juz501.ALogger, baseRoute string) {
-  if baseRoute != "/" {
-    mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
-      
-    })
-  }
-  handleRoute := func(w http.ResponseWriter, req *http.Request) {
-    baseURI := getBaseURI(req, baseRoute, logger)
+func handleRender(mux *http.ServeMux, rend *render.Render, logger go_logger_middleware.ALogger, base string) {
+  mux.HandleFunc( "/", func(w http.ResponseWriter, req *http.Request) {
+    logger.Println( "start" )
+    baseURI := getBaseURI(req, base, logger)
 
-    logger.Println( baseURI )
     templateName, hasTemplate, isPublicFile := getTemplate(req, baseURI, logger)
     if isPublicFile == true {
       logger.Println( "public file" )
-      return 
+      return
     }
     if false == hasTemplate {
       rend.HTML(w, http.StatusServiceUnavailable, "default/templateUnavailable", "")
       return
     }
-    data, err := loadData(templateName + ".json", baseURI, logger)
+    data, _ := loadData(templateName + ".json", baseURI, logger)
 
-    if err != nil {
-      logger.Println( err )
-      rend.HTML(w, http.StatusServiceUnavailable, "default/dataUnavailable", "")
-      return
-    }
     rend.HTML(w, http.StatusOK, templateName, data)
-  }
-  mux.HandleFunc(baseRoute, handleRoute)
-  if strings.HasSuffix(baseRoute, "/") {
-    newBaseRoute := strings.TrimSuffix(baseRoute, "/")
-    mux.HandleFunc(newBaseRoute, handleRoute)
-  }
+  })
 }
 
-func getBaseURI(req *http.Request, baseRoute string, logger juz501.ALogger) string {
+func getBaseURI(req *http.Request, baseRoute string, logger go_logger_middleware.ALogger) string {
   _, _, prefix, _ := getRequestVars(req, baseRoute, logger)
-  baseURI := prefix
-  if false == strings.HasSuffix(baseURI, "/") {
-    baseURI = baseURI + "/"
-  }
-  return baseURI
+  return prefix
 }
 
-func getRequestVars(req *http.Request, baseRoute string, logger juz501.ALogger) (string, string, string, string) {
+func getRequestVars(req *http.Request, baseRoute string, logger go_logger_middleware.ALogger) (string, string, string, string) {
   proto := req.URL.Scheme
   if proto == "" {
     proto = "http"
-  } 
+  }
+
   forwardedProto := req.Header.Get( "X-Forwarded-Proto" )
   if forwardedProto != "" {
     proto = forwardedProto
   }
-  
+
   forwardedHost := req.Header.Get( "X-Forwarded-Host" )
   host := req.Host
   if forwardedHost != "" {
     host = forwardedHost
   }
+
   forwardedPrefix := req.Header.Get( "X-Forwarded-Prefix" )
   prefix := baseRoute
   if forwardedPrefix != "" {
     prefix = forwardedPrefix
   }
+
   forwardedPath := req.Header.Get( "X-Forwarded-Path" )
   path := req.URL.Path
   if forwardedPath != "" {
     path = forwardedPath
   }
-	return proto, host, prefix, path 
+	return proto, host, prefix, path
 }
 
-func getTemplate(req *http.Request, baseURI string, logger juz501.ALogger) (string, bool, bool) {
-	templateName := strings.TrimPrefix(strings.TrimSuffix(strings.TrimPrefix(req.RequestURI, baseURI), "/"), "/")
+func getTemplate(req *http.Request, baseURI string, logger go_logger_middleware.ALogger) (string, bool, bool) {
+  logger.Println( "RequestURI Template: " + req.RequestURI )
+  logger.Println( "BaseURI Template: " + baseURI )
+	templateName := strings.TrimPrefix(req.RequestURI, "/" + baseURI)
   isPublicFile := false
   hasTemplate := false
 
-  logger.Println( "RequestURI Template: " + req.RequestURI )
-  logger.Println( "BaseURI Template: " + baseURI )
-  logger.Println( "Template Name: [" + templateName + "]" )
+  if strings.HasPrefix(templateName, "/") {
+    templateName = strings.TrimPrefix( templateName, "/" )
+  }
 
+  logger.Println( "Template Name: [" + templateName + "]" )
 	if templateName == "" {
 		templateName = "index"
     hasTemplate = Exists( templateName, ".tmpl", "templates", logger )
     isPublicFile = false
     return templateName, hasTemplate, isPublicFile
-	} 
+	}
+
   isPublicFile = Exists( templateName, "", "public", logger )
   if false == isPublicFile {
-    hasTemplate = Exists( templateName, ".tmpl", "templates", logger ) 
+    hasTemplate = Exists( templateName, ".tmpl", "templates", logger )
   }
   return templateName, hasTemplate, isPublicFile
 }
 
-func Exists(name string, extension string, folder string, logger juz501.ALogger) bool {
+func Exists(name string, extension string, folder string, logger go_logger_middleware.ALogger) bool {
   filename := folder + "/" + name + extension
   logger.Println( "file exists?: " + filename )
   _, err := os.Stat( filename )
   if os.IsNotExist(err) {
-    logger.Println( "No")
-    return false 
+    logger.Println( "No" )
+    return false
   }
-  logger.Println( "Yes")
+  logger.Println( "Yes" )
   return true
 }
 
 
-func loadData(filename string, baseURI string, logger juz501.ALogger) (interface{}, error) {
+func loadData(filename string, baseURI string, logger go_logger_middleware.ALogger) (interface{}, error) {
   var raw []byte
   logger.Println( "datafile: " + filename )
   raw, err := ioutil.ReadFile("data/" + filename)
@@ -175,7 +159,7 @@ func loadData(filename string, baseURI string, logger juz501.ALogger) (interface
   }
   var data map[string]interface{}
   err = json.Unmarshal(raw, &data)
-  data["BaseURI"] = baseURI
+  data["BaseURI"] = "/" + baseURI + "/"
 
   return data, err
 }
