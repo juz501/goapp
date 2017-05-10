@@ -19,6 +19,7 @@ For windows, you may need to get a version of make or use mingw32-make.exe
 * make install
 
 ### Compile and Run
+* npm run assets
 * make
 
 ## TODO

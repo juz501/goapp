@@ -12,4 +12,4 @@ clean:
 	rm -rf src/github.com
 
 run:
-	GOPATH=`pwd -P` PORT=18883 GOBASEROUTE=goapp bin/server
+	GOPATH=`pwd -P` PORT=8080 GOBASEROUTE=goapp bin/server

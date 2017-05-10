@@ -6,7 +6,6 @@ import (
   "log"
   "net/http"
   "os"
-  "os/signal"
   "strings"
 
   "github.com/urfave/negroni"
@@ -16,8 +15,6 @@ import (
 )
 
 func main() {
-  c := make( chan os.Signal, 2)
-  signal.Notify(c, os.Interrupt)
   logfilename := os.Getenv("GO_LOGFILE")
   if logfilename == "" {
     logfilename = "log/goapp.log"
@@ -28,7 +25,7 @@ func main() {
   }
   defer errorLog.Close()
 
-  rend := render.New(render.Options{IsDevelopment: true})
+  rend := render.New(render.Options{IsDevelopment: true, Directory: "theme/templates" })
   mux := http.NewServeMux()
   n := negroni.New()
   l := go_logger_middleware.NewLoggerWithStream( errorLog )
@@ -39,7 +36,9 @@ func main() {
 
   handleRender(mux, rend, l, baseRoute)
   s := go_static_middleware.NewStatic(http.Dir("public"))
-  s.Prefix = "/" + baseRoute
+  if baseRoute != "" {
+    s.Prefix = "/" + baseRoute
+  }
 
   n.Use(r)
   n.Use(l)
@@ -55,11 +54,6 @@ func main() {
 
   l.Println("Starting Goapp Service")
   l.Println("----------------------")
-  go func() {
-    <-c
-    l.Println("Shutdown Goapp Service")
-    os.Exit(0)
-  }()
   http.ListenAndServe( addr + port, n )
 }
 
@@ -137,14 +131,14 @@ func getTemplate(req *http.Request, baseURI string, logger go_logger_middleware.
   logger.Println( "Template Name: [" + templateName + "]" )
 	if templateName == "" {
 		templateName = "index"
-    hasTemplate = Exists( templateName, ".tmpl", "templates", logger )
+    hasTemplate = Exists( templateName, ".tmpl", "theme/templates", logger )
     isPublicFile = false
     return templateName, hasTemplate, isPublicFile
 	}
 
   isPublicFile = Exists( templateName, "", "public", logger )
   if false == isPublicFile {
-    hasTemplate = Exists( templateName, ".tmpl", "templates", logger )
+    hasTemplate = Exists( templateName, ".tmpl", "theme/templates", logger )
   }
   return templateName, hasTemplate, isPublicFile
 }
@@ -166,7 +160,7 @@ func loadData(req *http.Request, filename string, baseURI string, prefix string,
   var raw []byte
   var data map[string]interface{}
   logger.Println( "datafile: " + filename )
-  raw, err := ioutil.ReadFile("data/" + filename)
+  raw, err := ioutil.ReadFile("theme/data/" + filename)
   if err != nil {
     data = make( map[string]interface{} )
   } else {
