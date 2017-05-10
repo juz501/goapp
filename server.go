@@ -6,6 +6,7 @@ import (
   "log"
   "net/http"
   "os"
+  "os/signal"
   "strings"
 
   "github.com/urfave/negroni"
@@ -15,6 +16,8 @@ import (
 )
 
 func main() {
+  c := make( chan os.Signal, 2)
+  signal.Notify(c, os.Interrupt)
   logfilename := os.Getenv("GO_LOGFILE")
   if logfilename == "" {
     logfilename = "log/goapp.log"
@@ -52,15 +55,20 @@ func main() {
 
   l.Println("Starting Goapp Service")
   l.Println("----------------------")
+  go func() {
+    <-c
+    l.Println("Shutdown Goapp Service")
+    os.Exit(0)
+  }()
   http.ListenAndServe( addr + port, n )
 }
 
 func handleRender(mux *http.ServeMux, rend *render.Render, logger go_logger_middleware.ALogger, base string) {
   mux.HandleFunc( "/", func(w http.ResponseWriter, req *http.Request) {
     logger.Println( "start" )
-    baseURI := getBaseURI(req, base, logger)
+    baseURI, prefix := getBaseURI(req, base, logger)
 
-    templateName, hasTemplate, isPublicFile := getTemplate(req, baseURI, logger)
+    templateName, hasTemplate, isPublicFile := getTemplate(req, prefix, logger)
     if isPublicFile == true {
       logger.Println( "public file" )
       return
@@ -69,15 +77,19 @@ func handleRender(mux *http.ServeMux, rend *render.Render, logger go_logger_midd
       rend.HTML(w, http.StatusServiceUnavailable, "default/templateUnavailable", "")
       return
     }
-    data, _ := loadData(templateName + ".json", baseURI, logger)
+    data := loadData(req, templateName + ".json", baseURI, prefix, logger)
 
     rend.HTML(w, http.StatusOK, templateName, data)
   })
 }
 
-func getBaseURI(req *http.Request, baseRoute string, logger go_logger_middleware.ALogger) string {
-  _, _, prefix, _ := getRequestVars(req, baseRoute, logger)
-  return prefix
+func getBaseURI(req *http.Request, baseRoute string, logger go_logger_middleware.ALogger) (string, string) {
+  scheme, host, prefix, _ := getRequestVars(req, baseRoute, logger)
+  baseURI := scheme + "://" + host
+  if prefix != "" {
+    baseURI = baseURI + "/" + prefix
+  }
+  return baseURI, prefix
 }
 
 func getRequestVars(req *http.Request, baseRoute string, logger go_logger_middleware.ALogger) (string, string, string, string) {
@@ -114,7 +126,7 @@ func getRequestVars(req *http.Request, baseRoute string, logger go_logger_middle
 func getTemplate(req *http.Request, baseURI string, logger go_logger_middleware.ALogger) (string, bool, bool) {
   logger.Println( "RequestURI Template: " + req.RequestURI )
   logger.Println( "BaseURI Template: " + baseURI )
-	templateName := strings.TrimPrefix(req.RequestURI, "/" + baseURI)
+	templateName := strings.TrimSuffix(strings.TrimPrefix(req.RequestURI, "/" + baseURI), "/")
   isPublicFile := false
   hasTemplate := false
 
@@ -150,16 +162,25 @@ func Exists(name string, extension string, folder string, logger go_logger_middl
 }
 
 
-func loadData(filename string, baseURI string, logger go_logger_middleware.ALogger) (interface{}, error) {
+func loadData(req *http.Request, filename string, baseURI string, prefix string, logger go_logger_middleware.ALogger) interface{} {
   var raw []byte
+  var data map[string]interface{}
   logger.Println( "datafile: " + filename )
   raw, err := ioutil.ReadFile("data/" + filename)
   if err != nil {
-    return raw, err
+    data = make( map[string]interface{} )
+  } else {
+    err = json.Unmarshal(raw, &data)
+    if err != nil {
+      logger.Println( "Unmarshalling JSON failed" )
+    }
   }
-  var data map[string]interface{}
-  err = json.Unmarshal(raw, &data)
-  data["BaseURI"] = "/" + baseURI + "/"
-
-  return data, err
+  data["BaseURI"] = baseURI + "/"
+  basePath := ""
+  if prefix != "" {
+    basePath = "/" + prefix
+  }
+  path := strings.TrimPrefix(req.RequestURI, basePath)
+  data["CanonicalURI"] = strings.TrimSuffix(baseURI + path, "/")
+  return data
 }

@@ -4,20 +4,10 @@
   "description": "This project assumes you have go and npm installed",
   "main": "server.go",
   "scripts": {
-    "install": "npm run clean-install && npm run install-negroni && npm run install-render && npm run install-logger && npm run install-static",
-    "install-negroni": "sh -c 'GOPATH=`pwd -P` go get github.com/urfave/negroni'",
-    "install-render": "sh -c 'GOPATH=`pwd -P` go get github.com/unrolled/render'",
-    "install-logger": "sh -c 'GOPATH=`pwd -P` go get github.com/juz501/go_logger_middleware'",
-    "install-static": "sh -c 'GOPATH=`pwd -P` go get github.com/juz501/go_static_middleware'",
-    "clean-install" : "rm -rf src/github.com",
-    "start": "npm run do",
-    "do": "npm run build && npm run run",
-    "build": "bash -c 'GOPATH=`pwd -P` go build -o bin/server server.go'",
-    "run": "bash -c 'PORT=18883 GOBASEROUTE=\"goapp\" ./bin/server'",
     "js": "cp assets/js/*.js public",
     "files": "cp assets/favicon.ico public && cp assets/robots.txt public && cp assets/noext public && cp -r assets/images public",
     "sass": "node-sass assets/scss --output public",
-    "prestart" : "npm run js && npm run sass && npm run files"
+    "assets" : "npm run js && npm run sass && npm run files"
   },
   "author": "Julian Chan",
   "license": "MIT",

@@ -12,9 +12,14 @@
 
 ## Instructions
 
+For windows, you may need to get a version of make or use mingw32-make.exe
+
+### Installation
 * npm install
-* npm run install
-* npm start
+* make install
+
+### Compile and Run
+* make
 
 ## TODO
 
