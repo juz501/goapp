@@ -2,7 +2,6 @@ package main
 
 import (
   "encoding/json"
-  "errors"
   "io/ioutil"
   "log"
   "net/http"
@@ -27,56 +26,82 @@ func main() {
 
   rend := render.New(render.Options{IsDevelopment: true})
   mux := http.NewServeMux()
-
-
   n := negroni.New()
-  r := negroni.NewRecovery()
   l := juz501.NewLoggerWithStream( errorLog )
+
+  r := negroni.NewRecovery()
   r.Logger = l
-  handleRender(mux, rend, l)
   r.PrintStack = false
+  baseRoute := os.Getenv("GO_BASE_ROUTE")
+  if baseRoute == "" {
+    baseRoute = "/"
+  }
+  
+  handleRender(mux, rend, l, baseRoute)
+  s := negroni.NewStatic(http.Dir("public"))
+  s.Prefix = strings.TrimSuffix(baseRoute, "/")
+
   n.Use(r)
   n.Use(l)
   n.UseHandler(mux)
-  s := negroni.NewStatic(http.Dir("public"))
-  
   n.Use(s)
+
   port := ":" + os.Getenv("PORT")
   if port == ":" {
     port = ":80"
   }
   addr := os.Getenv("SERVER_ADDR")
+
   l.Println("Starting Goapp Service")
   l.Println("----------------------")
   http.ListenAndServe( addr + port, n )
 }
 
-func handleRender(mux *http.ServeMux, rend *render.Render, logger juz501.ALogger) {
-  mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
-    baseURI, templateName, err := getBaseURIAndTemplate(req, logger)
-    if err != nil {
+func handleRender(mux *http.ServeMux, rend *render.Render, logger juz501.ALogger, baseRoute string) {
+  if baseRoute != "/" {
+    mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
+      
+    })
+  }
+  handleRoute := func(w http.ResponseWriter, req *http.Request) {
+    baseURI := getBaseURI(req, baseRoute, logger)
+
+    logger.Println( baseURI )
+    templateName, hasTemplate, isPublicFile := getTemplate(req, baseURI, logger)
+    if isPublicFile == true {
+      logger.Println( "public file" )
+      return 
+    }
+    if false == hasTemplate {
+      rend.HTML(w, http.StatusServiceUnavailable, "default/templateUnavailable", "")
       return
     }
     data, err := loadData(templateName + ".json", baseURI, logger)
 
     if err != nil {
+      logger.Println( err )
       rend.HTML(w, http.StatusServiceUnavailable, "default/dataUnavailable", "")
-    } else if false == Exists(templateName, ".tmpl", "templates") {
-      rend.HTML(w, http.StatusServiceUnavailable, "default/templateUnavailable", "")
-    } else {
-      rend.HTML(w, http.StatusOK, templateName, data)
+      return
     }
-  })
+    rend.HTML(w, http.StatusOK, templateName, data)
+  }
+  mux.HandleFunc(baseRoute, handleRoute)
+  if strings.HasSuffix(baseRoute, "/") {
+    newBaseRoute := strings.TrimSuffix(baseRoute, "/")
+    mux.HandleFunc(newBaseRoute, handleRoute)
+  }
 }
 
-func getBaseURIAndTemplate(req *http.Request, logger juz501.ALogger) (string, string, error) {
-  proto, host, _ := getRequestVars(req, logger)
-  baseURI := proto + "://" + host + "/" 
-  templateName, err := getTemplate(req, baseURI, logger)
-  return baseURI, templateName, err
+func getBaseURI(req *http.Request, baseRoute string, logger juz501.ALogger) string {
+  _, _, prefix, _ := getRequestVars(req, baseRoute, logger)
+  baseURI := prefix
+  if false == strings.HasSuffix(baseURI, "/") {
+    baseURI = baseURI + "/"
+  }
+  return baseURI
 }
 
-func getRequestVars(req *http.Request, logger juz501.ALogger) (string, string, string) {
+func getRequestVars(req *http.Request, baseRoute string, logger juz501.ALogger) (string, string, string, string) {
   proto := req.URL.Scheme
   if proto == "" {
     proto = "http"
@@ -91,44 +116,64 @@ func getRequestVars(req *http.Request, logger juz501.ALogger) (string, string, s
   if forwardedHost != "" {
     host = forwardedHost
   }
+  forwardedPrefix := req.Header.Get( "X-Forwarded-Prefix" )
+  prefix := baseRoute
+  if forwardedPrefix != "" {
+    prefix = forwardedPrefix
+  }
   forwardedPath := req.Header.Get( "X-Forwarded-Path" )
   path := req.URL.Path
   if forwardedPath != "" {
     path = forwardedPath
   }
-	return proto, host, path 
+	return proto, host, prefix, path 
 }
 
-func getTemplate(req *http.Request, baseURI string, logger juz501.ALogger) (string, error) {
-  var err error
-	templateName := strings.TrimSuffix(strings.TrimPrefix(req.RequestURI, "/"), "/")
+func getTemplate(req *http.Request, baseURI string, logger juz501.ALogger) (string, bool, bool) {
+	templateName := strings.TrimPrefix(strings.TrimSuffix(strings.TrimPrefix(req.RequestURI, baseURI), "/"), "/")
+  isPublicFile := false
+  hasTemplate := false
+
+  logger.Println( "RequestURI Template: " + req.RequestURI )
+  logger.Println( "BaseURI Template: " + baseURI )
+  logger.Println( "Template Name: [" + templateName + "]" )
+
 	if templateName == "" {
 		templateName = "index"
-	} else if Exists( templateName, "", "public" ) == true {
-    err = errors.New("Not a template")
+    hasTemplate = Exists( templateName, ".tmpl", "templates", logger )
+    isPublicFile = false
+    return templateName, hasTemplate, isPublicFile
+	} 
+  isPublicFile = Exists( templateName, "", "public", logger )
+  if false == isPublicFile {
+    hasTemplate = Exists( templateName, ".tmpl", "templates", logger ) 
   }
-  return templateName, err
+  return templateName, hasTemplate, isPublicFile
 }
 
-func Exists(name string, extension string, folder string) bool {
+func Exists(name string, extension string, folder string, logger juz501.ALogger) bool {
   filename := folder + "/" + name + extension
+  logger.Println( "file exists?: " + filename )
   _, err := os.Stat( filename )
   if os.IsNotExist(err) {
-    return false
+    logger.Println( "No")
+    return false 
   }
+  logger.Println( "Yes")
   return true
 }
 
 
-func loadData(filename string, basepath string, logger juz501.ALogger) (interface{}, error) {
+func loadData(filename string, baseURI string, logger juz501.ALogger) (interface{}, error) {
   var raw []byte
+  logger.Println( "datafile: " + filename )
   raw, err := ioutil.ReadFile("data/" + filename)
   if err != nil {
     return raw, err
   }
   var data map[string]interface{}
   err = json.Unmarshal(raw, &data)
-  data["BasePath"] = basepath 
+  data["BaseURI"] = baseURI
 
   return data, err
 }
