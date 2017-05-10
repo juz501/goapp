@@ -17,7 +17,7 @@ import (
 func main() {
   logfilename := os.Getenv("GO_LOGFILE")
   if logfilename == "" {
-    logfilename = "logs/goapp.log"
+    logfilename = "log/goapp.log"
   }
   errorLog, err := os.OpenFile(logfilename, os.O_RDWR | os.O_CREATE | os.O_APPEND, 0666)
   if err != nil {
