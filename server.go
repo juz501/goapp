@@ -17,7 +17,7 @@ import (
 func main() {
   logfilename := os.Getenv("GO_LOGFILE")
   if logfilename == "" {
-    logfilename = "/var/log/gologs/goapp.log"
+    logfilename = "logs/goapp.log"
   }
   errorLog, err := os.OpenFile(logfilename, os.O_RDWR | os.O_CREATE | os.O_APPEND, 0666)
   if err != nil {
@@ -39,7 +39,7 @@ func main() {
   n.Use(l)
   n.UseHandler(mux)
   s := negroni.NewStatic(http.Dir("public"))
-  
+
   n.Use(s)
   port := ":" + os.Getenv("PORT")
   if port == ":" {

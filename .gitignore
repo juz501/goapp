@@ -9,3 +9,5 @@ src/
 node_modules/
 bin/*
 !bin/.gitkeep
+log/*
+!log/.gitkeep

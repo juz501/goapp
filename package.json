@@ -8,7 +8,7 @@
     "install-negroni": "sh -c 'GOPATH=`pwd -P` go get github.com/urfave/negroni'",
     "install-render": "sh -c 'GOPATH=`pwd -P` go get github.com/unrolled/render'",
     "install-logger": "sh -c 'GOPATH=`pwd -P` go get github.com/juz501/go-logger-middleware'",
-    "start": "sh -c 'GOPATH=`pwd -P` go build -o bin/server server.go' && sh -c 'GOPATH=`pwd =P` PORT=18883 GO_LOGFILE=/var/log/gologs/goapp.log ./bin/server'",
+    "start": "sh -c 'GOPATH=`pwd -P` go build -o bin/server server.go' && sh -c 'GOPATH=`pwd =P` PORT=18883 ./bin/server'",
     "js": "cp assets/js/*.js public",
     "files": "cp assets/favicon.ico public && cp assets/robots.txt public && cp assets/noext public && cp -r assets/images public",
     "sass": "node-sass assets/scss --output public",
