@@ -6,7 +6,6 @@ import (
   "io/ioutil"
   "log"
   "net/http"
-  "net/http/httputil"
   "os"
   "strings"
 
@@ -54,17 +53,11 @@ func main() {
 
 func handleRender(mux *http.ServeMux, rend *render.Render, logger juz501.ALogger) {
   mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
-    requestDump, err := httputil.DumpRequest(req, true)
-    if err != nil {
-      logger.Println(err)
-    } else {
-      logger.Println( string( requestDump ) ) 
-    }
-    path, templateName, err := getPathAndTemplate(req, logger)
+    _, _, _, baseURI, templateName, err := getBasePathAndTemplate(req, logger)
     if err != nil {
       return
     }
-    data, err := loadData(templateName + ".json", path, logger)
+    data, err := loadData(templateName + ".json", baseURI, logger)
 
     if err != nil {
       rend.HTML(w, http.StatusServiceUnavailable, "default/dataUnavailable", "")
@@ -76,35 +69,30 @@ func handleRender(mux *http.ServeMux, rend *render.Render, logger juz501.ALogger
   })
 }
 
-func getPathAndTemplate(req *http.Request, logger juz501.ALogger) (string, string, error) {
-  path := getPath(req, logger)
-  templateName, err := getTemplate(req)
-  return path, templateName, err
+func getBasePathAndTemplate(req *http.Request, logger juz501.ALogger) (string, string, string, string, string, error) {
+  proto, host, path := getRequestVars(req, logger)
+  baseURI := proto + "://" + host + "/" 
+  templateName, err := getTemplate(req, baseURI, logger)
+  return proto, host, path, baseURI, templateName, err
 }
 
-func getPath(req *http.Request, logger juz501.ALogger) string {
-  proto := "http://"
-	sslProxyHeader := req.Header.Get( "X-Forwarded-Proto" )
-	if sslProxyHeader == "https" {
-		proto = "https://"
-	}
-
-	host := req.Header.Get( "Host" )
-	if host == "" {
-    logger.Println( "test" )
-    logger.Println( req.Host )
-    logger.Println( host )
-		host = req.Host
-	}
-	return proto + host + "/"
+func getRequestVars(req *http.Request, logger juz501.ALogger) (string, string, string) {
+  forwardedProto := req.Header.Get( "X-Forwarded-Proto" )
+  forwardedPath := req.Header.Get( "X-Forwarded-Path" )
+  forwardedHost := req.Header.Get( "X-Forwarded-Host" )
+  host := req.Host
+  if forwardedHost != "" {
+    host = forwardedHost
+  }
+	return forwardedProto, host, forwardedPath
 }
 
-func getTemplate(req *http.Request) (string, error) {
+func getTemplate(req *http.Request, baseURI string, logger juz501.ALogger) (string, error) {
   var err error
-	templateName := strings.TrimSuffix(strings.TrimPrefix(req.URL.Path, "/"), "/")
+	templateName := strings.TrimSuffix(strings.TrimPrefix(req.RequestURI, "/"), "/")
 	if templateName == "" {
 		templateName = "index"
-	} else if Exists( req.URL.Path, "", "public" ) == true {
+	} else if Exists( templateName, "", "public" ) == true {
     err = errors.New("Not a template")
   }
   return templateName, err
@@ -120,16 +108,15 @@ func Exists(name string, extension string, folder string) bool {
 }
 
 
-func loadData(filename string, path string, logger juz501.ALogger) (interface{}, error) {
+func loadData(filename string, basepath string, logger juz501.ALogger) (interface{}, error) {
   var raw []byte
   raw, err := ioutil.ReadFile("data/" + filename)
   if err != nil {
-    logger.Println( err )
     return raw, err
   }
   var data map[string]interface{}
   err = json.Unmarshal(raw, &data)
-  data["Path"] = path
+  data["BasePath"] = basepath 
 
   return data, err
 }
