@@ -78,13 +78,22 @@ func getBasePathAndTemplate(req *http.Request, logger juz501.ALogger) (string, s
 
 func getRequestVars(req *http.Request, logger juz501.ALogger) (string, string, string) {
   forwardedProto := req.Header.Get( "X-Forwarded-Proto" )
-  forwardedPath := req.Header.Get( "X-Forwarded-Path" )
+  proto := req.URL.Scheme
+  if forwardedProto != "" {
+    proto = forwardedProto
+  }
+  
   forwardedHost := req.Header.Get( "X-Forwarded-Host" )
   host := req.Host
   if forwardedHost != "" {
     host = forwardedHost
   }
-	return forwardedProto, host, forwardedPath
+  forwardedPath := req.Header.Get( "X-Forwarded-Path" )
+  path := req.URL.Path
+  if forwardedPath != "" {
+    path = forwardedPath
+  }
+	return proto, host, path 
 }
 
 func getTemplate(req *http.Request, baseURI string, logger juz501.ALogger) (string, error) {
