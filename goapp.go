@@ -24,7 +24,8 @@ func main() {
   }
   defer errorLog.Close()
 
-  rend := render.New(render.Options{IsDevelopment: true, Directory: "theme/templates" })
+  themeRender := render.New(render.Options{IsDevelopment: true, Directory: "theme/templates" })
+  coreRender := render.New(render.Options{IsDevelopment: true, Directory: "core/templates" })
   mux := http.NewServeMux()
   n := negroni.New()
   l := gomiddleware.NewLoggerWithStream( errorLog )
@@ -33,7 +34,7 @@ func main() {
   r.PrintStack = false
   baseRoute := os.Getenv("GOBASEROUTE")
 
-  handleRender(mux, rend, l, baseRoute)
+  handleRender(mux, themeRender, coreRender, l, baseRoute)
   s := gomiddleware.NewStatic(http.Dir("public"))
   if baseRoute != "" {
     s.Prefix = "/" + baseRoute
@@ -56,7 +57,7 @@ func main() {
   http.ListenAndServe( addr + port, n )
 }
 
-func handleRender(mux *http.ServeMux, rend *render.Render, logger gomiddleware.ALogger, base string) {
+func handleRender(mux *http.ServeMux, themeRender *render.Render, coreRender *render.Render, logger gomiddleware.ALogger, base string) {
   mux.HandleFunc( "/", func(w http.ResponseWriter, req *http.Request) {
     logger.Println( "start" )
     baseURI, prefix := getBaseURI(req, base, logger)
@@ -67,12 +68,12 @@ func handleRender(mux *http.ServeMux, rend *render.Render, logger gomiddleware.A
       return
     }
     if false == hasTemplate {
-      rend.HTML(w, http.StatusServiceUnavailable, "default/templateUnavailable", "")
+      coreRender.HTML(w, http.StatusServiceUnavailable, "templateUnavailable", "")
       return
     }
     data := loadData(req, templateName + ".json", baseURI, prefix, logger)
 
-    rend.HTML(w, http.StatusOK, templateName, data)
+    themeRender.HTML(w, http.StatusOK, templateName, data)
   })
 }
 
