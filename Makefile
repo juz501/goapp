@@ -1,4 +1,4 @@
-PACKAGES= github.com/urfave/negroni github.com/unrolled/render github.com/juz501/go_logger_middleware github.com/juz501/go_static_middleware
+PACKAGES= github.com/urfave/negroni github.com/unrolled/render github.com/chromatixau/gomiddleware
 
 all: build run
 
