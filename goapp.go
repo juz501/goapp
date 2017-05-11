@@ -10,8 +10,7 @@ import (
 
   "github.com/urfave/negroni"
   "github.com/unrolled/render"
-  "github.com/juz501/go_logger_middleware"
-  "github.com/juz501/go_static_middleware"
+  "github.com/chromatixau/gomiddleware"
 )
 
 func main() {
@@ -28,14 +27,14 @@ func main() {
   rend := render.New(render.Options{IsDevelopment: true, Directory: "theme/templates" })
   mux := http.NewServeMux()
   n := negroni.New()
-  l := go_logger_middleware.NewLoggerWithStream( errorLog )
+  l := chromatixau.NewLoggerWithStream( errorLog )
   r := negroni.NewRecovery()
   r.Logger = l
   r.PrintStack = false
   baseRoute := os.Getenv("GOBASEROUTE")
 
   handleRender(mux, rend, l, baseRoute)
-  s := go_static_middleware.NewStatic(http.Dir("public"))
+  s := chromatixau.NewStatic(http.Dir("public"))
   if baseRoute != "" {
     s.Prefix = "/" + baseRoute
   }
@@ -57,7 +56,7 @@ func main() {
   http.ListenAndServe( addr + port, n )
 }
 
-func handleRender(mux *http.ServeMux, rend *render.Render, logger go_logger_middleware.ALogger, base string) {
+func handleRender(mux *http.ServeMux, rend *render.Render, logger chromatixau.ALogger, base string) {
   mux.HandleFunc( "/", func(w http.ResponseWriter, req *http.Request) {
     logger.Println( "start" )
     baseURI, prefix := getBaseURI(req, base, logger)
@@ -77,7 +76,7 @@ func handleRender(mux *http.ServeMux, rend *render.Render, logger go_logger_midd
   })
 }
 
-func getBaseURI(req *http.Request, baseRoute string, logger go_logger_middleware.ALogger) (string, string) {
+func getBaseURI(req *http.Request, baseRoute string, logger chromatixau.ALogger) (string, string) {
   scheme, host, prefix, _ := getRequestVars(req, baseRoute, logger)
   baseURI := scheme + "://" + host
   if prefix != "" {
@@ -86,7 +85,7 @@ func getBaseURI(req *http.Request, baseRoute string, logger go_logger_middleware
   return baseURI, prefix
 }
 
-func getRequestVars(req *http.Request, baseRoute string, logger go_logger_middleware.ALogger) (string, string, string, string) {
+func getRequestVars(req *http.Request, baseRoute string, logger chromatixau.ALogger) (string, string, string, string) {
   proto := req.URL.Scheme
   if proto == "" {
     proto = "http"
@@ -117,7 +116,7 @@ func getRequestVars(req *http.Request, baseRoute string, logger go_logger_middle
 	return proto, host, prefix, path
 }
 
-func getTemplate(req *http.Request, baseURI string, logger go_logger_middleware.ALogger) (string, bool, bool) {
+func getTemplate(req *http.Request, baseURI string, logger chromatixau.ALogger) (string, bool, bool) {
   logger.Println( "RequestURI Template: " + req.RequestURI )
   logger.Println( "BaseURI Template: " + baseURI )
 	templateName := strings.TrimSuffix(strings.TrimPrefix(req.RequestURI, "/" + baseURI), "/")
@@ -143,7 +142,7 @@ func getTemplate(req *http.Request, baseURI string, logger go_logger_middleware.
   return templateName, hasTemplate, isPublicFile
 }
 
-func Exists(name string, extension string, folder string, logger go_logger_middleware.ALogger) bool {
+func Exists(name string, extension string, folder string, logger chromatixau.ALogger) bool {
   filename := folder + "/" + name + extension
   logger.Println( "file exists?: " + filename )
   _, err := os.Stat( filename )
@@ -156,7 +155,7 @@ func Exists(name string, extension string, folder string, logger go_logger_middl
 }
 
 
-func loadData(req *http.Request, filename string, baseURI string, prefix string, logger go_logger_middleware.ALogger) interface{} {
+func loadData(req *http.Request, filename string, baseURI string, prefix string, logger chromatixau.ALogger) interface{} {
   var raw []byte
   var data map[string]interface{}
   logger.Println( "datafile: " + filename )
