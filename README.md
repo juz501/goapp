@@ -9,6 +9,7 @@
 * node-sass
 * github.com/urfave/negroni
 * github.com/unrolled/render
+* github.com/ChromatixAU/gomiddleware
 
 ## Instructions
 
